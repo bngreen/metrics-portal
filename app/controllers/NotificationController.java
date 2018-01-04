@@ -323,7 +323,9 @@ public class NotificationController extends Controller {
             throw new IllegalStateException("Alert should have a notification group. AlertId: " + notification.getAlertId());
         }
 
-        return CompletableFuture.completedFuture(Results.noContent());
+        return entry.notifyRecipient(alert, trigger, _injector)
+                .thenApply(aVoid -> Results.ok("sent"))
+                .exceptionally(t -> Results.internalServerError(t.toString()));
     }
 
     private final int _maxLimit;
