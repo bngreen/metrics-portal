@@ -25,7 +25,6 @@ import com.datastax.driver.mapping.annotations.PartitionKey;
 import com.datastax.driver.mapping.annotations.Query;
 import com.datastax.driver.mapping.annotations.Table;
 import models.internal.NagiosExtension;
-import models.internal.Organization;
 import models.internal.impl.DefaultAlert;
 import models.internal.impl.DefaultOrganization;
 import org.joda.time.Instant;
@@ -76,6 +75,9 @@ public class Alert {
 
     @Column(name = "notification_group_id")
     private UUID notificationGroupId;
+
+    @Column(name = "comment")
+    private String comment;
 
     public Long getVersion() {
         return version;
@@ -157,6 +159,14 @@ public class Alert {
         notificationGroupId = value;
     }
 
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(final String value) {
+        comment = value;
+    }
+
     /**
      * Converts this model into an {@link models.internal.Alert}.
      *
@@ -164,7 +174,7 @@ public class Alert {
      * @return a new internal model
      */
     public models.internal.Alert toInternal(final NotificationRepository notificationRepository) {
-        return new DefaultAlert.Builder()
+        final DefaultAlert.Builder builder = new DefaultAlert.Builder()
                 .setId(getUuid())
                 .setName(getName())
                 .setQuery(getQuery())
@@ -174,9 +184,15 @@ public class Alert {
                 .setNotificationGroup(
                         Optional.ofNullable(
                                 getNotificationGroupId())
-                                .flatMap(id -> notificationRepository.getNotificationGroup(id, Organization.DEFAULT))
-                                .orElse(null))
-                .build();
+                                .flatMap(id ->
+                                        notificationRepository.getNotificationGroup(
+                                                id,
+                                                new DefaultOrganization.Builder().setId(organization).build()))
+                                .orElse(null));
+        if (comment != null) {
+            builder.setComment(comment);
+        }
+        return builder.build();
     }
 
     private NagiosExtension convertToInternalNagiosExtension(final Map<String, String> extensions) {
